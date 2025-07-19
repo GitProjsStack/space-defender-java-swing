@@ -24,7 +24,7 @@ public class Main {
 
         // Splash panel with scaled logo and loading text
         JPanel splashPanel = new JPanel() {
-            final Image gameLogo = new ImageIcon("images/space-defender-logo.png").getImage();
+            final Image gameLogo = new ImageIcon("logo/space-defender-logo.png").getImage();
             private int dotCount = 0;
 
             {
