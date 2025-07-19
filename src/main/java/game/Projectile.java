@@ -19,6 +19,11 @@ public class Projectile extends GameObject {
     }
 
     @Override
+    public void update(boolean left, boolean right, boolean up, boolean down) {
+        // no implementation needed
+    }
+
+    @Override
     public void draw(Graphics g) {
         g.setColor(Color.YELLOW);
         g.fillRect(x, y, width, height);

@@ -32,6 +32,8 @@ public abstract class GameObject {
      */
     public abstract void update();
 
+    public abstract void update(boolean left, boolean right, boolean up, boolean down);
+
     /**
      * Draws the game object using the provided graphics context.
      *
