@@ -43,6 +43,11 @@ public class Enemy extends GameObject {
     }
 
     @Override
+    public void update(boolean left, boolean right, boolean up, boolean down) {
+        // no implementation required
+    }
+
+    @Override
     public void draw(Graphics g) {
         if (IMAGES[level] != null) {
             g.drawImage(IMAGES[level], x, y, width, height, null);
