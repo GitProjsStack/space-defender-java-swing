@@ -3,19 +3,22 @@ package game;
 import java.awt.*;
 
 /**
- * Represents a projectile (bullet) fired by an enemy.
+ * Projectile fired by player or enemies.
  */
 public class Projectile extends GameObject {
 
-    private static final int SPEED = 5;
+    private final int speed;
+    private final Color color;
 
-    public Projectile(int x, int y) {
-        super(x, y, 5, 10); // Thin vertical bullet
+    public Projectile(int x, int y, int width, int height, int speed, Color color) {
+        super(x, y, width, height);
+        this.speed = speed;
+        this.color = color;
     }
 
     @Override
     public void update() {
-        y += SPEED;
+        y -= speed; // Move upward for player projectile
     }
 
     @Override
@@ -25,7 +28,7 @@ public class Projectile extends GameObject {
 
     @Override
     public void draw(Graphics g) {
-        g.setColor(Color.YELLOW);
-        g.fillRect(x, y, width, height);
+        g.setColor(color);
+        g.fillOval(x, y, width, height);
     }
 }
