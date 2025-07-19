@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/space-defender-logo.png" alt="Space Defender" width="200"/>
+  <img src="logo/space-defender-logo.png" alt="Space Defender" width="200"/>
 </p>
 
 A 2D space shooter game built in **Java Swing**. 
