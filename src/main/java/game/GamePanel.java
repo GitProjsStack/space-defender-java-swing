@@ -8,9 +8,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Main game panel handling rendering, game loop, input, level progression, enemy shooting, player shooting, explosions, and win condition.
- */
 public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
     private final Timer timer;
@@ -37,9 +34,6 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private static final int maxLevel = 7;
     private boolean gameWon = false;
 
-    /**
-     * Constructs the game panel and initializes game objects.
-     */
     public GamePanel() {
         setPreferredSize(new Dimension(800, 600));
         setBackground(Color.BLACK);
@@ -55,25 +49,16 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         timer = new Timer(16, this); // ~60 FPS
     }
 
-    /**
-     * Starts the game loop timer.
-     */
     public void startGameLoop() {
         timer.start();
     }
 
-    /**
-     * Game loop callback: updates game logic and triggers repaint.
-     */
     @Override
     public void actionPerformed(ActionEvent e) {
         update();
         repaint();
     }
 
-    /**
-     * Updates all game objects and checks for events.
-     */
     private void update() {
         if (!playerDead) {
             player.update(left, right, up, down);
@@ -90,8 +75,13 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         updatePlayerProjectiles();
         updateExplosions();
 
+        if (!playerDead && player.isDead()) {
+            playerDead = true;
+            playerExplosion = new Explosion(player.getX(), player.getY());
+        }
+
         if (playerDead && playerExplosion != null && playerExplosion.isFinished()) {
-            gameOver("You were destroyed!");
+            gameOver();
         }
 
         handleLevelProgression();
@@ -116,9 +106,13 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             }
 
             if (!playerDead && player.getBounds().intersects(enemy.getBounds())) {
-                playerDead = true;
-                playerExplosion = new Explosion(player.getX(), player.getY());
-                return; // stop updating enemies on death
+                player.takeDamage(20);
+                enemy.takeDamage(999);
+                if (enemy.isDead()) {
+                    explosions.add(new Explosion(enemy.getX(), enemy.getY()));
+                    enemyIterator.remove();
+                }
+                continue;
             }
 
             if (enemy.canShoot()) {
@@ -139,9 +133,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             }
 
             if (!playerDead && player.getBounds().intersects(p.getBounds())) {
-                playerDead = true;
-                playerExplosion = new Explosion(player.getX(), player.getY());
-                return; // stop updating projectiles on death
+                player.takeDamage(10);
+                iterator.remove();
             }
         }
     }
@@ -161,9 +154,13 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             while (enemyIt.hasNext()) {
                 Enemy enemy = enemyIt.next();
                 if (proj.getBounds().intersects(enemy.getBounds())) {
-                    explosions.add(new Explosion(enemy.getX(), enemy.getY()));
+                    enemy.takeDamage(20);
                     projIt.remove();
-                    enemyIt.remove();
+
+                    if (enemy.isDead()) {
+                        explosions.add(new Explosion(enemy.getX(), enemy.getY()));
+                        enemyIt.remove();
+                    }
                     break;
                 }
             }
@@ -200,20 +197,41 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         }
     }
 
-    /**
-     * Ends the game with a message.
-     *
-     * @param reason The reason for game over.
-     */
-    private void gameOver(String reason) {
+    private void gameOver() {
         timer.stop();
-        JOptionPane.showMessageDialog(this, "Game Over! " + reason);
-        System.exit(0);
+        int choice = JOptionPane.showConfirmDialog(this,
+                "Game Over! You were destroyed!\nPlay again?",
+                "Game Over",
+                JOptionPane.YES_NO_OPTION);
+
+        if (choice == JOptionPane.YES_OPTION) {
+            restartGame();
+        } else {
+            System.exit(0);
+        }
     }
 
-    /**
-     * Paints the game scene including all entities and HUD.
-     */
+    private void restartGame() {
+        // Reset everything to initial state
+
+        playerDead = false;
+        gameWon = false;
+        level = 1;
+        levelStartTime = System.currentTimeMillis();
+
+        player.resetHealth();
+        player.setPosition(400, 500);
+
+        enemies.clear();
+        enemyProjectiles.clear();
+        playerProjectiles.clear();
+        explosions.clear();
+
+        playerExplosion = null;
+
+        timer.start();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -245,8 +263,6 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         g.drawString("Level: " + level, 10, 20);
     }
 
-    // ===== Input Handling =====
-
     @Override
     public void keyPressed(KeyEvent e) {
         if (!playerDead) {
@@ -256,7 +272,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                 case KeyEvent.VK_UP, KeyEvent.VK_W -> up = true;
                 case KeyEvent.VK_DOWN, KeyEvent.VK_S -> down = true;
                 case KeyEvent.VK_SPACE -> space = true;
-                default -> {}
+                default -> {} // do nothing
             }
         }
     }
@@ -270,7 +286,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                 case KeyEvent.VK_UP, KeyEvent.VK_W -> up = false;
                 case KeyEvent.VK_DOWN, KeyEvent.VK_S -> down = false;
                 case KeyEvent.VK_SPACE -> space = false;
-                default -> {}
+                default -> {} // do nothing
             }
         }
     }

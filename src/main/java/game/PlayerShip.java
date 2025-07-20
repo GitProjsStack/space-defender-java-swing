@@ -7,7 +7,7 @@ import java.util.Objects;
 import javax.imageio.ImageIO;
 
 /**
- * Represents the player's ship with movement and shooting behavior.
+ * Represents the player's ship with movement, shooting, and health behavior.
  */
 public class PlayerShip {
 
@@ -21,6 +21,9 @@ public class PlayerShip {
 
     private long lastShotTime = 0;
     private static final int SHOT_COOLDOWN = 300; // milliseconds
+
+    private final int maxHealth = 100;
+    private int currentHealth = maxHealth;
 
     /**
      * Initializes the player's ship at the given position.
@@ -58,7 +61,7 @@ public class PlayerShip {
     }
 
     /**
-     * Draws the player ship.
+     * Draws the player ship and its health bar.
      */
     public void draw(Graphics g) {
         if (image != null) {
@@ -67,28 +70,48 @@ public class PlayerShip {
             g.setColor(Color.BLUE);
             g.fillRect(x, y, width, height);
         }
+
+        drawHealthBar(g);
     }
 
-    /**
-     * Checks if the ship can shoot based on cooldown.
-     */
+    private void drawHealthBar(Graphics g) {
+        int barWidth = 40;
+        int barHeight = 6;
+        int barX = x;
+        int barY = y - 10;
+
+        HealthBarRenderer.drawHealthBar(g, barX, barY, barWidth, barHeight, currentHealth, maxHealth);
+    }
+
     public boolean canShoot() {
         return System.currentTimeMillis() - lastShotTime >= SHOT_COOLDOWN;
     }
 
-    /**
-     * Fires a projectile.
-     */
     public Projectile shoot() {
         lastShotTime = System.currentTimeMillis();
         return new Projectile(x + width / 2 - 3, y, -8, NEON_GREEN);
     }
 
-    /**
-     * Returns the bounding box of the ship.
-     */
     public Rectangle getBounds() {
         return new Rectangle(x, y, width, height);
+    }
+
+    public void takeDamage(int damage) {
+        currentHealth -= damage;
+        if (currentHealth < 0) currentHealth = 0;
+    }
+
+    public boolean isDead() {
+        return currentHealth <= 0;
+    }
+
+    public void resetHealth() {
+        currentHealth = maxHealth;
+    }
+
+    public void setPosition(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 
     public int getX() {

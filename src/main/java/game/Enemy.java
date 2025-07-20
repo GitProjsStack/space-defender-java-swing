@@ -17,6 +17,9 @@ public class Enemy extends GameObject {
     private final int level;
     private int shootCooldown = 0;
 
+    private final int maxHealth;
+    private int currentHealth;
+
     static {
         for (int i = 0; i < IMAGES.length; i++) {
             try {
@@ -33,7 +36,9 @@ public class Enemy extends GameObject {
 
     public Enemy(int x, int y, int level) {
         super(x, y, 40, 40);
-        this.level = Math.max(1, Math.min(level, 7)) - 1; // clamp level 0-6 for array index
+        this.level = Math.max(1, Math.min(level, 7)) - 1;
+        this.maxHealth = 20 + this.level * 10;
+        this.currentHealth = maxHealth;
     }
 
     @Override
@@ -44,7 +49,7 @@ public class Enemy extends GameObject {
 
     @Override
     public void update(boolean left, boolean right, boolean up, boolean down) {
-        // no implementation required for Enemy
+        // Enemy movement not controlled by input
     }
 
     @Override
@@ -55,24 +60,35 @@ public class Enemy extends GameObject {
             g.setColor(Color.RED);
             g.fillOval(x, y, width, height);
         }
+
+        drawHealthBar(g);
     }
 
-    /**
-     * Returns true if enemy can shoot (cooldown elapsed).
-     */
+    private void drawHealthBar(Graphics g) {
+        int barWidth = 40;
+        int barHeight = 5;
+        int barX = x;
+        int barY = y - 8;
+
+        HealthBarRenderer.drawHealthBar(g, barX, barY, barWidth, barHeight, currentHealth, maxHealth);
+    }
+
     public boolean canShoot() {
         return shootCooldown <= 0;
     }
 
-    /**
-     * Enemy shoots a downward projectile.
-     *
-     * @return a new Projectile moving downwards from enemy's center bottom.
-     */
     public Projectile shoot() {
-        shootCooldown = 60 + (int)(Math.random() * 60); // Random cooldown 60-120 frames
-        int projX = x + width / 2 - 4;  // Adjust projectile x-position
+        shootCooldown = 60 + (int)(Math.random() * 60);
+        int projX = x + width / 2 - 4;
         int projY = y + height;
-        return new Projectile(projX, projY, 5, Color.RED); // Enemy projectile: red, size 8x12, speed 5 downward
+        return new Projectile(projX, projY, 5, Color.RED);
+    }
+
+    public void takeDamage(int damage) {
+        currentHealth -= damage;
+    }
+
+    public boolean isDead() {
+        return currentHealth <= 0;
     }
 }
