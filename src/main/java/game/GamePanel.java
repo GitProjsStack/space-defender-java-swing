@@ -201,8 +201,10 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
     private void gameOver() {
         timer.stop();
+
+        String enemyText = enemiesKilled == 1 ? "enemy" : "enemies";
         int choice = JOptionPane.showConfirmDialog(this,
-                "Game Over! You were destroyed!\nPlay again?",
+                "Game Over! You were destroyed!\nYou killed " + enemiesKilled + " " + enemyText + ".\nPlay again?",
                 "Game Over",
                 JOptionPane.YES_NO_OPTION);
 
@@ -214,16 +216,21 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     }
 
     private void restartGame() {
-        // Reset everything to initial state
+        // Reset movement keys so no stuck inputs
+        left = right = up = down = space = false;
 
+        // Reset game state variables
         playerDead = false;
         gameWon = false;
         level = 1;
         levelStartTime = System.currentTimeMillis();
+        enemiesKilled = 0;
 
+        // Reset player state
         player.resetHealth();
         player.setPosition(400, 500);
 
+        // Clear all lists
         enemies.clear();
         enemyProjectiles.clear();
         playerProjectiles.clear();
@@ -231,7 +238,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         playerExplosion = null;
 
+        // Restart timer/game loop
         timer.start();
+
+        // Ensuring GamePanel has focus for keyboard events
+        requestFocusInWindow();
     }
 
     @Override
