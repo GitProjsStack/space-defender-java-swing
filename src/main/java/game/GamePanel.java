@@ -35,6 +35,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private long levelStartTime = System.currentTimeMillis();
     private final int[] levelDurations = {20000, 30000, 40000, 50000, 60000, 70000};
     private static final int maxLevel = 7;
+    private final int MAX_ENEMIES = 10; // max enemies allowed simultaneously
+    private final int MIN_ENEMY_SPACING = 60; // minimum distance in pixels between enemies
     private boolean gameWon = false;
 
     public GamePanel() {
@@ -96,9 +98,29 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     }
 
     private void maybeSpawnEnemy() {
-        if (!playerDead && random.nextDouble() < 0.02) {
-            int x = random.nextInt(800 - 40); // enemy width = 40
-            enemies.add(new Enemy(x, -50, level));
+        if (playerDead) return;
+
+        if (enemies.size() >= MAX_ENEMIES) return;
+
+        if (random.nextDouble() < 0.02) {
+            int tries = 10; // try 10 times max to find a good spot
+
+            while (tries-- > 0) {
+                int x = random.nextInt(800 - 40); // enemy width = 40
+
+                boolean tooClose = false;
+                for (Enemy e : enemies) {
+                    if (Math.abs(e.getX() - x) < MIN_ENEMY_SPACING) {
+                        tooClose = true;
+                        break;
+                    }
+                }
+
+                if (!tooClose) {
+                    enemies.add(new Enemy(x, -50, level));
+                    break;
+                }
+            }
         }
     }
 
