@@ -16,7 +16,7 @@ public class PlayerShip extends GameObject {
         // Load image from resources folder
         image = new ImageIcon(
                 Objects.requireNonNull(
-                        getClass().getResource("/images/playership.png")
+                        getClass().getResource("/images/playerImgs/playership.png")
                 )
         ).getImage();
     }

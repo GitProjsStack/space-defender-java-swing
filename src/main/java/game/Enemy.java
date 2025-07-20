@@ -22,7 +22,7 @@ public class Enemy extends GameObject {
             try {
                 IMAGES[i] = ImageIO.read(
                         Objects.requireNonNull(
-                                Enemy.class.getResourceAsStream("/images/enemy" + (i + 1) + ".png")
+                                Enemy.class.getResourceAsStream("/images/enemyImgs/enemy" + (i + 1) + ".png")
                         )
                 );
             } catch (IOException | IllegalArgumentException e) {
