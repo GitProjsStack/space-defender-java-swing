@@ -27,6 +27,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
     private Explosion playerExplosion = null;
     private boolean playerDead = false;
+    private int enemiesKilled = 0;
 
     private int level = 1;
     private long levelStartTime = System.currentTimeMillis();
@@ -160,6 +161,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                     if (enemy.isDead()) {
                         explosions.add(new Explosion(enemy.getX(), enemy.getY()));
                         enemyIt.remove();
+                        enemiesKilled ++;
                     }
                     break;
                 }
@@ -260,7 +262,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 16));
-        g.drawString("Level: " + level, 10, 20);
+        g.drawString("Level: " + level + "  Kills: " + enemiesKilled, 10, 20);
     }
 
     @Override
