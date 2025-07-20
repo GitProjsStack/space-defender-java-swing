@@ -25,6 +25,10 @@ public class PlayerShip {
     private final int maxHealth = 100;
     private int currentHealth = maxHealth;
 
+    private boolean shieldActive = false;
+    private long shieldActivatedTime = 0;
+    private static final long SHIELD_DURATION = 5000; // 5 seconds
+
     /**
      * Initializes the player's ship at the given position.
      */
@@ -58,12 +62,31 @@ public class PlayerShip {
         // Boundaries
         x = Math.max(0, Math.min(x, 800 - width));
         y = Math.max(0, Math.min(y, 600 - height));
+
+        // Shield
+        if (shieldActive && System.currentTimeMillis() - shieldActivatedTime > SHIELD_DURATION) {
+            shieldActive = false;
+        }
+    }
+
+    public void activateShield() {
+        shieldActive = true;
+        shieldActivatedTime = System.currentTimeMillis();
+    }
+
+    public boolean isShieldActive() {
+        return shieldActive;
     }
 
     /**
      * Draws the player ship and its health bar.
      */
     public void draw(Graphics g) {
+        if (shieldActive) {
+            g.setColor(new Color(0, 150, 255, 120));
+            g.fillOval(x - 10, y - 10, width + 20, height + 20);
+        }
+
         if (image != null) {
             g.drawImage(image, x, y, width, height, null);
         } else {
@@ -107,6 +130,13 @@ public class PlayerShip {
 
     public void resetHealth() {
         currentHealth = maxHealth;
+    }
+
+    public void heal(int amount) {
+        currentHealth += amount;
+        if (currentHealth > maxHealth) {
+            currentHealth = maxHealth;
+        }
     }
 
     public void setPosition(int x, int y) {

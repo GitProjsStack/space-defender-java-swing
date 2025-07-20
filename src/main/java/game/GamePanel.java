@@ -24,6 +24,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private final List<Projectile> enemyProjectiles;
     private final List<Projectile> playerProjectiles;
     private final List<Explosion> explosions;
+    private final List<HealthPotion> healthPotions = new ArrayList<>();
+    private final List<ShieldBoost> shieldBoosts = new ArrayList<>();
 
     private Explosion playerExplosion = null;
     private boolean playerDead = false;
@@ -69,6 +71,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             }
 
             maybeSpawnEnemy();
+            maybeSpawnHealthPotion();
+            maybeSpawnShieldBoost();
+
+            updateShieldBoosts();
+            updateHealthPotions();
             updateEnemies();
             updateEnemyProjectiles();
         }
@@ -95,6 +102,56 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         }
     }
 
+    private void maybeSpawnHealthPotion() {
+        if (!playerDead && random.nextDouble() < 0.002) { // ~1 in 500 chance per frame
+            int x = random.nextInt(800 - 30); // potion width
+            healthPotions.add(new HealthPotion(x, -30));
+        }
+    }
+
+    private void maybeSpawnShieldBoost() {
+        if (!playerDead && random.nextDouble() < 0.001) {
+            int x = random.nextInt(800 - 30);
+            shieldBoosts.add(new ShieldBoost(x, -30));
+        }
+    }
+
+    private void updateShieldBoosts() {
+        Iterator<ShieldBoost> it = shieldBoosts.iterator();
+        while (it.hasNext()) {
+            ShieldBoost shield = it.next();
+            shield.update();
+
+            if (shield.getY() > 600) {
+                it.remove();
+                continue;
+            }
+
+            if (!playerDead && player.getBounds().intersects(shield.getBounds())) {
+                player.activateShield();
+                it.remove();
+            }
+        }
+    }
+
+    private void updateHealthPotions() {
+        Iterator<HealthPotion> iterator = healthPotions.iterator();
+        while (iterator.hasNext()) {
+            HealthPotion potion = iterator.next();
+            potion.update();
+
+            if (potion.getY() > 600) {
+                iterator.remove(); // Fell off screen
+                continue;
+            }
+
+            if (!playerDead && player.getBounds().intersects(potion.getBounds())) {
+                player.heal(20);
+                iterator.remove();
+            }
+        }
+    }
+
     private void updateEnemies() {
         Iterator<Enemy> enemyIterator = enemies.iterator();
         while (enemyIterator.hasNext()) {
@@ -107,7 +164,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             }
 
             if (!playerDead && player.getBounds().intersects(enemy.getBounds())) {
-                player.takeDamage(20);
+                if (!player.isShieldActive()) {
+                    player.takeDamage(20);
+                }
                 enemy.takeDamage(999);
                 if (enemy.isDead()) {
                     explosions.add(new Explosion(enemy.getX(), enemy.getY()));
@@ -134,7 +193,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             }
 
             if (!playerDead && player.getBounds().intersects(p.getBounds())) {
-                player.takeDamage(10);
+                if (!player.isShieldActive()) {
+                    player.takeDamage(10);
+                }
                 iterator.remove();
             }
         }
@@ -232,6 +293,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         // Clear all lists
         enemies.clear();
+        healthPotions.clear();
+        shieldBoosts.clear();
         enemyProjectiles.clear();
         playerProjectiles.clear();
         explosions.clear();
@@ -257,6 +320,14 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         for (Enemy enemy : enemies) {
             enemy.draw(g);
+        }
+
+        for (HealthPotion potion : healthPotions) {
+            potion.draw(g);
+        }
+
+        for (ShieldBoost sb : shieldBoosts) {
+            sb.draw(g);
         }
 
         for (Projectile p : enemyProjectiles) {
