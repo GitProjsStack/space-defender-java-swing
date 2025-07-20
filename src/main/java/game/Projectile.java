@@ -3,32 +3,47 @@ package game;
 import java.awt.*;
 
 /**
- * Projectile fired by player or enemies.
+ * Represents a projectile shot by either the player or enemies.
  */
-public class Projectile extends GameObject {
+public class Projectile {
 
+    private final int x;
+    private int y;
     private final int speed;
+    private static final int width = 8;
+    private static final int height = 12;
     private final Color color;
 
-    public Projectile(int x, int y, int width, int height, int speed, Color color) {
-        super(x, y, width, height);
+    public Projectile(int x, int y, int speed, Color color) {
+        this.x = x;
+        this.y = y;
         this.speed = speed;
         this.color = color;
     }
 
-    @Override
+    /**
+     * Moves the projectile.
+     */
     public void update() {
-        y -= speed; // Move upward for player projectile
+        y += speed;
     }
 
-    @Override
-    public void update(boolean left, boolean right, boolean up, boolean down) {
-        // no implementation needed
-    }
-
-    @Override
+    /**
+     * Draws the projectile.
+     */
     public void draw(Graphics g) {
         g.setColor(color);
-        g.fillOval(x, y, width, height);
+        g.fillRect(x, y, width, height);
+    }
+
+    /**
+     * Returns the bounding box of the projectile.
+     */
+    public Rectangle getBounds() {
+        return new Rectangle(x, y, width, height);
+    }
+
+    public int getY() {
+        return y;
     }
 }

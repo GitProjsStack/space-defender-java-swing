@@ -73,6 +73,6 @@ public class Enemy extends GameObject {
         shootCooldown = 60 + (int)(Math.random() * 60); // Random cooldown 60-120 frames
         int projX = x + width / 2 - 4;  // Adjust projectile x-position
         int projY = y + height;
-        return new Projectile(projX, projY, 8, 12, 5, Color.RED); // Enemy projectile: red, size 8x12, speed 5 downward
+        return new Projectile(projX, projY, 5, Color.RED); // Enemy projectile: red, size 8x12, speed 5 downward
     }
 }

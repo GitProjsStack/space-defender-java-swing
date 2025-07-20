@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Main game panel handling rendering, game loop, input, level progression, enemy shooting, and win condition.
+ * Main game panel handling rendering, game loop, input, level progression, enemy shooting, player shooting, explosions, and win condition.
  */
 public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
@@ -25,10 +25,15 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     private final PlayerShip player;
     private final List<Enemy> enemies;
     private final List<Projectile> enemyProjectiles;
+    private final List<Projectile> playerProjectiles;
+    private final List<Explosion> explosions;
+
+    private Explosion playerExplosion = null;
+    private boolean playerDead = false;
 
     private int level = 1;
     private long levelStartTime = System.currentTimeMillis();
-    private final int[] levelDurations = {20000, 30000, 40000, 50000, 60000, 70000}; // in ms
+    private final int[] levelDurations = {20000, 30000, 40000, 50000, 60000, 70000};
     private static final int maxLevel = 7;
     private boolean gameWon = false;
 
@@ -44,6 +49,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
         player = new PlayerShip(400, 500);
         enemies = new ArrayList<>();
         enemyProjectiles = new ArrayList<>();
+        playerProjectiles = new ArrayList<>();
+        explosions = new ArrayList<>();
 
         timer = new Timer(16, this); // ~60 FPS
     }
@@ -65,18 +72,33 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     }
 
     /**
-     * Updates player, enemies, projectiles, handles shooting, collisions, and level progression.
+     * Updates all game objects and checks for events.
      */
     private void update() {
-        player.update(left, right, up, down);
-        maybeSpawnEnemy();
-        updateEnemies();
-        updateEnemyProjectiles();
+        if (!playerDead) {
+            player.update(left, right, up, down);
+
+            if (space && player.canShoot()) {
+                playerProjectiles.add(player.shoot());
+            }
+
+            maybeSpawnEnemy();
+            updateEnemies();
+            updateEnemyProjectiles();
+        }
+
+        updatePlayerProjectiles();
+        updateExplosions();
+
+        if (playerDead && playerExplosion != null && playerExplosion.isFinished()) {
+            gameOver("You were destroyed!");
+        }
+
         handleLevelProgression();
     }
 
     private void maybeSpawnEnemy() {
-        if (random.nextDouble() < 0.02) {
+        if (!playerDead && random.nextDouble() < 0.02) {
             int x = random.nextInt(800 - 40); // enemy width = 40
             enemies.add(new Enemy(x, -50, level));
         }
@@ -93,9 +115,10 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
                 continue;
             }
 
-            if (player.getBounds().intersects(enemy.getBounds())) {
-                gameOver("Crashed into enemy!");
-                return;
+            if (!playerDead && player.getBounds().intersects(enemy.getBounds())) {
+                playerDead = true;
+                playerExplosion = new Explosion(player.getX(), player.getY());
+                return; // stop updating enemies on death
             }
 
             if (enemy.canShoot()) {
@@ -105,32 +128,71 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     }
 
     private void updateEnemyProjectiles() {
-        Iterator<Projectile> projectileIterator = enemyProjectiles.iterator();
-        while (projectileIterator.hasNext()) {
-            Projectile p = projectileIterator.next();
+        Iterator<Projectile> iterator = enemyProjectiles.iterator();
+        while (iterator.hasNext()) {
+            Projectile p = iterator.next();
             p.update();
 
             if (p.getY() > 600) {
-                projectileIterator.remove();
+                iterator.remove();
                 continue;
             }
 
-            if (player.getBounds().intersects(p.getBounds())) {
-                gameOver("Shot by an enemy!");
-                return;
+            if (!playerDead && player.getBounds().intersects(p.getBounds())) {
+                playerDead = true;
+                playerExplosion = new Explosion(player.getX(), player.getY());
+                return; // stop updating projectiles on death
             }
         }
     }
 
+    private void updatePlayerProjectiles() {
+        Iterator<Projectile> projIt = playerProjectiles.iterator();
+        while (projIt.hasNext()) {
+            Projectile proj = projIt.next();
+            proj.update();
+
+            if (proj.getY() < 0) {
+                projIt.remove();
+                continue;
+            }
+
+            Iterator<Enemy> enemyIt = enemies.iterator();
+            while (enemyIt.hasNext()) {
+                Enemy enemy = enemyIt.next();
+                if (proj.getBounds().intersects(enemy.getBounds())) {
+                    explosions.add(new Explosion(enemy.getX(), enemy.getY()));
+                    projIt.remove();
+                    enemyIt.remove();
+                    break;
+                }
+            }
+        }
+    }
+
+    private void updateExplosions() {
+        Iterator<Explosion> expIt = explosions.iterator();
+        while (expIt.hasNext()) {
+            Explosion exp = expIt.next();
+            exp.update();
+            if (exp.isFinished()) {
+                expIt.remove();
+            }
+        }
+        if (playerExplosion != null && !playerExplosion.isFinished()) {
+            playerExplosion.update();
+        }
+    }
+
     private void handleLevelProgression() {
-        if (level < maxLevel) {
+        if (!playerDead && level < maxLevel) {
             long elapsed = System.currentTimeMillis() - levelStartTime;
             if (elapsed > levelDurations[level - 1]) {
                 level++;
                 levelStartTime = System.currentTimeMillis();
                 System.out.println("Level up! Now at level: " + level);
             }
-        } else if (!gameWon) {
+        } else if (!gameWon && !playerDead) {
             gameWon = true;
             timer.stop();
             JOptionPane.showMessageDialog(this, "You Win!");
@@ -150,26 +212,34 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     }
 
     /**
-     * Paints the game objects and HUD.
+     * Paints the game scene including all entities and HUD.
      */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        // Draw player
-        player.draw(g);
+        if (!playerDead) {
+            player.draw(g);
+        } else if (playerExplosion != null) {
+            playerExplosion.draw(g);
+        }
 
-        // Draw enemies
         for (Enemy enemy : enemies) {
             enemy.draw(g);
         }
 
-        // Draw enemy bullets
         for (Projectile p : enemyProjectiles) {
             p.draw(g);
         }
 
-        // Level display
+        for (Projectile p : playerProjectiles) {
+            p.draw(g);
+        }
+
+        for (Explosion explosion : explosions) {
+            explosion.draw(g);
+        }
+
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 16));
         g.drawString("Level: " + level, 10, 20);
@@ -179,31 +249,34 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        switch (e.getKeyCode()) {
-            case KeyEvent.VK_LEFT, KeyEvent.VK_A -> left = true;
-            case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> right = true;
-            case KeyEvent.VK_UP, KeyEvent.VK_W -> up = true;
-            case KeyEvent.VK_DOWN, KeyEvent.VK_S -> down = true;
-            case KeyEvent.VK_SPACE -> space = true;
-            default -> left = right = up = down = space = false;
+        if (!playerDead) {
+            switch (e.getKeyCode()) {
+                case KeyEvent.VK_LEFT, KeyEvent.VK_A -> left = true;
+                case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> right = true;
+                case KeyEvent.VK_UP, KeyEvent.VK_W -> up = true;
+                case KeyEvent.VK_DOWN, KeyEvent.VK_S -> down = true;
+                case KeyEvent.VK_SPACE -> space = true;
+                default -> {}
+            }
         }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-        switch (e.getKeyCode()) {
-            case KeyEvent.VK_LEFT, KeyEvent.VK_A -> left = false;
-            case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> right = false;
-            case KeyEvent.VK_UP, KeyEvent.VK_W -> up = false;
-            case KeyEvent.VK_DOWN, KeyEvent.VK_S -> down = false;
-            case KeyEvent.VK_SPACE -> space = false;
-            default -> left = right = up = down = space = false;
+        if (!playerDead) {
+            switch (e.getKeyCode()) {
+                case KeyEvent.VK_LEFT, KeyEvent.VK_A -> left = false;
+                case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> right = false;
+                case KeyEvent.VK_UP, KeyEvent.VK_W -> up = false;
+                case KeyEvent.VK_DOWN, KeyEvent.VK_S -> down = false;
+                case KeyEvent.VK_SPACE -> space = false;
+                default -> {}
+            }
         }
     }
 
     @Override
     public void keyTyped(KeyEvent e) {
         // Not used
-        // We must override this method from the abstract class though
     }
 }
